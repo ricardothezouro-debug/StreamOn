@@ -72,6 +72,7 @@ class LauncherPage(QWidget):
         self._targets: list[Target] = []
         self._rows: dict[int, _TargetRow] = {}
         self.on_open_config = None  # optional callback set by the window
+        self._config_window = None  # editor aberto pela propria pagina (modo embutido)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -231,8 +232,19 @@ class LauncherPage(QWidget):
             app.quit()
 
     def _open_config(self) -> None:
+        # Modo standalone: a janela injeta um callback proprio.
         if callable(self.on_open_config):
             self.on_open_config()
+            return
+        # Modo embutido (plugin do Sidekick): a propria pagina abre o editor.
+        from stream_ligar.ui.config_window import ConfigWindow
+
+        if self._config_window is None:
+            self._config_window = ConfigWindow(self.config)
+            self._config_window.saved.connect(self.reload_targets)
+        self._config_window.show()
+        self._config_window.raise_()
+        self._config_window.activateWindow()
 
 
 class LauncherWindow(QMainWindow):
