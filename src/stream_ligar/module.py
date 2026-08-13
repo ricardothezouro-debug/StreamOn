@@ -44,6 +44,22 @@ def module_info() -> "ModuleInfo":
         return ModuleInfo(**data)
 
 
+def help_text() -> str:
+    """Texto de ajuda exibido na tela 'Ajuda' do Streamer Sidekick."""
+    return (
+        "O StreamOn abre seus programas e painéis de live na ordem certa, com um "
+        "clique — como OBS, software de câmera/áudio e os dashboards do YouTube/"
+        "Twitch no Chrome.\n\n"
+        "Como usar:\n"
+        "• Clique em \"Configurar\" para montar sua sequência (ela começa vazia).\n"
+        "• Adicione itens: Programa (.exe), Chrome (perfil + abas) ou Link.\n"
+        "• Defina um delay (segundos) após cada item, para dar tempo de carregar.\n"
+        "• Reordene, duplique, desative ou remova itens como quiser.\n"
+        "• De volta na tela principal, clique em \"LIGAR LIVE\" para disparar tudo.\n\n"
+        "Dica: o delay evita que o próximo programa abra antes do anterior estar pronto."
+    )
+
+
 def build_page(config=None):
     """Return the launcher page widget for embedding inside the Sidekick hub.
 

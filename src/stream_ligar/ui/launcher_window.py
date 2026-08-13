@@ -239,7 +239,7 @@ class LauncherWindow(QMainWindow):
     def __init__(self, config: Optional[ConfigStore] = None) -> None:
         super().__init__()
         self.config = config or ConfigStore()
-        self.setWindowTitle("Stream Ligar")
+        self.setWindowTitle("StreamOn")
         if ASSET_ICON.exists():
             self.setWindowIcon(QIcon(str(ASSET_ICON)))
         self.resize(760, 720)

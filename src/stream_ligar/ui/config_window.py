@@ -56,7 +56,7 @@ class ConfigWindow(QMainWindow):
         self._current: Optional[int] = None
         self._loading = False
 
-        self.setWindowTitle("Stream Ligar — Configuração")
+        self.setWindowTitle("StreamOn — Configuração")
         if ASSET_ICON.exists():
             self.setWindowIcon(QIcon(str(ASSET_ICON)))
         self.resize(1040, 720)
@@ -71,7 +71,7 @@ class ConfigWindow(QMainWindow):
 
         header = QHBoxLayout()
         header.addWidget(Wordmark(compact=True), 1)
-        self.close_after = QCheckBox("Fechar o Stream Ligar após abrir tudo")
+        self.close_after = QCheckBox("Fechar o StreamOn após abrir tudo")
         self.close_after.setChecked(bool(self.config.get("close_after_launch", False)))
         header.addWidget(self.close_after, 0, Qt.AlignmentFlag.AlignRight)
         root.addLayout(header)

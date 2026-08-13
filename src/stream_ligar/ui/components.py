@@ -127,7 +127,7 @@ class StatusDot(QWidget):
 
 
 class Wordmark(QWidget):
-    """Draws the power bolt + "Stream Ligar" in the Sidekick colour treatment."""
+    """Draws the power bolt + "StreamOn" in the Sidekick colour treatment."""
 
     def __init__(self, compact: bool = False, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -148,7 +148,7 @@ class Wordmark(QWidget):
         _draw_power_icon(painter, icon_rect)
 
         text_x = icon_rect.right() + (10 if self.compact else 16)
-        segments = [(ELECTRIC_CYAN, "Stream"), (SOFT_WHITE, " "), (NEON_MAGENTA, "Ligar")]
+        segments = [(ELECTRIC_CYAN, "Stream"), (NEON_MAGENTA, "On")]
         size = 22 if self.compact else 40
         font = QFont("Bahnschrift", size, QFont.Weight.Bold)
         metrics = QFontMetrics(font)
