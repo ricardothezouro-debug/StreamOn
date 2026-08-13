@@ -31,8 +31,8 @@ def module_info() -> "ModuleInfo":
     is drop-in compatible with ``ModuleRegistry.register``."""
     data = dict(
         module_id=MODULE_ID,
-        title="Ligar Live",
-        subtitle="Abre NVIDIA Broadcast, OBS, Sidekick e os painéis de live em um clique.",
+        title="StreamOn",
+        subtitle="Abre seus apps e painéis de live (OBS, dashboards e o que você configurar) em um clique.",
         status="Pronto para transmitir",
         accent=ACCENT,
     )

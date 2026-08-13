@@ -49,38 +49,14 @@ class Target:
 
 
 def default_targets() -> list[Target]:
-    """The launch sequence Ricardo asked for, ready to go out of the box."""
-    return [
-        Target(
-            name="NVIDIA Broadcast",
-            kind=KIND_APP,
-            path=r"C:\Program Files\NVIDIA Corporation\NVIDIA Broadcast\NVIDIA Broadcast.exe",
-            delay_after=4.0,
-        ),
-        Target(
-            name="OBS Studio",
-            kind=KIND_APP,
-            path=r"D:\OBS\bin\64bit\obs64.exe",
-            # OBS precisa rodar a partir da própria pasta; workdir vazio = pasta do exe.
-            delay_after=5.0,
-        ),
-        Target(
-            name="Streamer Sidekick",
-            kind=KIND_APP,
-            path=r"D:\RICARDO\StreamerSidekick-0.3.0-portable\StreamerSidekick.exe",
-            delay_after=3.0,
-        ),
-        Target(
-            name="Chrome (Ricardo) — YouTube + Twitch",
-            kind=KIND_CHROME,
-            chrome_profile="Profile 2",
-            urls=[
-                "https://studio.youtube.com/channel/UC62G9tOGPPIyxSANpBiZKfQ/livestreaming",
-                "https://dashboard.twitch.tv/u/gamoxkun/stream-manager",
-            ],
-            delay_after=0.0,
-        ),
-    ]
+    """Configuração inicial vazia.
+
+    O StreamOn começa zerado: cada usuário adiciona seus próprios itens (apps,
+    links e janelas do Chrome) pela tela de configuração. Assim a sequência de
+    inicialização faz sentido para qualquer pessoa, não só para um setup
+    específico.
+    """
+    return []
 
 
 DEFAULT_CONFIG: dict[str, Any] = {
