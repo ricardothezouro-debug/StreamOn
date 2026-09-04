@@ -2,24 +2,50 @@
 
 import json
 import os
+import sys
 from pathlib import Path
 
 
-def find_chrome() -> str:
-    """Return the path to chrome.exe, or an empty string if not found."""
-    candidates = [
-        Path(os.getenv("PROGRAMFILES", r"C:\Program Files")) / "Google/Chrome/Application/chrome.exe",
-        Path(os.getenv("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Google/Chrome/Application/chrome.exe",
-        Path(os.getenv("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe",
+def _chrome_candidates() -> list[Path]:
+    """Onde o Chrome costuma estar instalado, por sistema operacional."""
+    if sys.platform == "win32":
+        return [
+            Path(os.getenv("PROGRAMFILES", r"C:\Program Files")) / "Google/Chrome/Application/chrome.exe",
+            Path(os.getenv("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Google/Chrome/Application/chrome.exe",
+            Path(os.getenv("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe",
+        ]
+    if sys.platform == "darwin":
+        # Apontamos para o binário dentro do bundle: assim o Popen consegue
+        # passar --profile-directory e as abas como argumentos.
+        inner = "Contents/MacOS/Google Chrome"
+        return [
+            Path("/Applications/Google Chrome.app") / inner,
+            Path.home() / "Applications/Google Chrome.app" / inner,
+        ]
+    return [
+        Path("/usr/bin/google-chrome"),
+        Path("/usr/bin/google-chrome-stable"),
+        Path("/usr/bin/chromium"),
+        Path("/usr/bin/chromium-browser"),
+        Path("/snap/bin/chromium"),
     ]
-    for path in candidates:
+
+
+def find_chrome() -> str:
+    """Return the path to the Chrome executable, or an empty string if not found."""
+    for path in _chrome_candidates():
         if path.exists():
             return str(path)
     return ""
 
 
 def chrome_user_data_dir() -> Path:
-    return Path(os.getenv("LOCALAPPDATA", "")) / "Google/Chrome/User Data"
+    """Pasta de perfis do Chrome do usuário atual, por sistema operacional."""
+    if sys.platform == "win32":
+        return Path(os.getenv("LOCALAPPDATA", "")) / "Google/Chrome/User Data"
+    if sys.platform == "darwin":
+        return Path.home() / "Library/Application Support/Google/Chrome"
+    return Path.home() / ".config/google-chrome"
 
 
 def list_chrome_profiles() -> list[tuple[str, str]]:

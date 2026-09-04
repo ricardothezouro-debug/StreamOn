@@ -1,5 +1,6 @@
 """The Config editor: manage which apps/links open, their order and delays."""
 
+import sys
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
@@ -38,8 +39,20 @@ from stream_ligar.ui.theme import MUTED, PANEL_BORDER
 
 ASSET_ICON = brand_icon_path()
 
+# O que o usuário escolhe como "programa" muda por SO: um .exe no Windows,
+# um bundle .app no macOS, um binário no Linux.
+if sys.platform == "win32":
+    _APP_NOUN = "programa (.exe)"
+    _APP_FILTER = "Programas (*.exe);;Todos (*.*)"
+elif sys.platform == "darwin":
+    _APP_NOUN = "aplicativo (.app)"
+    _APP_FILTER = "Aplicativos (*.app);;Todos (*)"
+else:
+    _APP_NOUN = "programa"
+    _APP_FILTER = "Todos (*)"
+
 _KIND_ITEMS = [
-    ("Programa (.exe)", KIND_APP),
+    (_APP_NOUN.capitalize(), KIND_APP),
     ("Chrome (perfil + abas)", KIND_CHROME),
     ("Link (navegador padrão)", KIND_URL),
 ]
@@ -176,14 +189,14 @@ class ConfigWindow(QMainWindow):
         app_layout = QVBoxLayout(self.app_group)
         app_layout.setContentsMargins(0, 0, 0, 0)
         app_layout.setSpacing(8)
-        app_layout.addWidget(self._field_label("Caminho do programa (.exe)"))
+        app_layout.addWidget(self._field_label(f"Caminho do {_APP_NOUN}"))
         app_layout.addLayout(self._path_row("path"))
         app_layout.addWidget(self._field_label("Argumentos (opcional)"))
         self.args = QLineEdit()
         self.args.setPlaceholderText("ex.: --start-minimized")
         self.args.textChanged.connect(self._on_field_changed)
         app_layout.addWidget(self.args)
-        app_layout.addWidget(self._field_label("Pasta de trabalho (opcional — vazio usa a pasta do exe)"))
+        app_layout.addWidget(self._field_label("Pasta de trabalho (opcional — vazio usa a pasta do programa)"))
         app_layout.addLayout(self._path_row("workdir", pick_dir=True))
         layout.addWidget(self.app_group)
 
@@ -359,7 +372,7 @@ class ConfigWindow(QMainWindow):
             chosen = QFileDialog.getExistingDirectory(self, "Escolher pasta", edit.text() or "")
         else:
             chosen, _ = QFileDialog.getOpenFileName(
-                self, "Escolher programa", edit.text() or "", "Programas (*.exe);;Todos (*.*)"
+                self, "Escolher programa", edit.text() or "", _APP_FILTER
             )
         if chosen:
             edit.setText(chosen)
