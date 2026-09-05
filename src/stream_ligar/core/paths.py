@@ -18,16 +18,47 @@ def asset_dir() -> Path:
 
 
 def brand_icon_path() -> Path:
-    return asset_dir() / "brand" / "app_icon.ico"
+    """Melhor arquivo de ícone para a plataforma atual.
+
+    O Qt só renderiza ``.ico`` com consistência no Windows; nas demais
+    plataformas (e sempre que o ``.ico`` não existir) usamos o PNG.
+    """
+    brand = asset_dir() / "brand"
+    ico = brand / "app_icon.ico"
+    png = brand / "app_icon.png"
+    if sys.platform == "win32" and ico.exists():
+        return ico
+    if png.exists():
+        return png
+    return ico
+
+
+def _platform_candidates() -> list[Path]:
+    """Diretórios de dados preferenciais por sistema operacional.
+
+    Espelha o Streamer Sidekick. Sem isto, fora do Windows a config caía em
+    ``./.stream_ligar`` — ou seja, na pasta de onde o app foi aberto, mudando de
+    lugar a cada execução.
+    """
+    home = Path.home()
+    if sys.platform == "win32":
+        candidates: list[Path] = []
+        if os.getenv("APPDATA"):
+            candidates.append(Path(os.getenv("APPDATA", "")) / APP_NAME)
+        if os.getenv("LOCALAPPDATA"):
+            candidates.append(Path(os.getenv("LOCALAPPDATA", "")) / APP_NAME)
+        return candidates
+    if sys.platform == "darwin":
+        return [home / "Library" / "Application Support" / APP_NAME]
+    # Linux e outros: segue o XDG Base Directory.
+    xdg = os.getenv("XDG_CONFIG_HOME")
+    base = Path(xdg) if xdg else home / ".config"
+    return [base / APP_NAME]
 
 
 def app_data_dir() -> Path:
     """Return a writable per-user data directory, mirroring Streamer Sidekick."""
-    candidates: list[Path] = []
-    if os.getenv("APPDATA"):
-        candidates.append(Path(os.getenv("APPDATA", "")) / APP_NAME)
-    if os.getenv("LOCALAPPDATA"):
-        candidates.append(Path(os.getenv("LOCALAPPDATA", "")) / APP_NAME)
+    candidates = _platform_candidates()
     candidates.append(Path.cwd() / ".stream_ligar")
 
     for path in candidates:

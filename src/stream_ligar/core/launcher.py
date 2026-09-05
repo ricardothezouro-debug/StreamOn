@@ -4,7 +4,9 @@ sequence on a background thread so the UI stays responsive."""
 import os
 import shlex
 import subprocess
+import sys
 import time
+import webbrowser
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
@@ -12,10 +14,25 @@ from PySide6.QtCore import QThread, Signal
 from stream_ligar.core.browsers import find_chrome
 from stream_ligar.core.config import KIND_APP, KIND_CHROME, KIND_URL, Target
 
+_ON_WINDOWS = sys.platform == "win32"
+_ON_MACOS = sys.platform == "darwin"
+
 # Windows process-creation flags: run detached so the children outlive the launcher.
 _DETACHED_PROCESS = 0x00000008
 _CREATE_NEW_PROCESS_GROUP = 0x00000200
 _CREATION_FLAGS = _DETACHED_PROCESS | _CREATE_NEW_PROCESS_GROUP
+
+
+def _detached_kwargs() -> dict:
+    """Como destacar o processo filho, por sistema operacional.
+
+    ``creationflags`` só existe no Windows — passá-lo no macOS/Linux levanta
+    ``ValueError`` e derruba o lançamento. Fora do Windows o equivalente é
+    ``start_new_session``, que tira o filho do grupo de processos do launcher.
+    """
+    if _ON_WINDOWS:
+        return {"creationflags": _CREATION_FLAGS}
+    return {"start_new_session": True}
 
 
 def _split_args(raw: str) -> list[str]:
@@ -23,7 +40,8 @@ def _split_args(raw: str) -> list[str]:
     if not raw:
         return []
     try:
-        return shlex.split(raw, posix=False)
+        # No Windows as aspas seguem outra convenção; fora dele vale o POSIX.
+        return shlex.split(raw, posix=not _ON_WINDOWS)
     except ValueError:
         return raw.split()
 
@@ -42,6 +60,8 @@ def launch_target(target: Target) -> tuple[bool, str]:
         return False, f"Não encontrado: {exc}"
     except OSError as exc:
         return False, f"Erro ao abrir: {exc}"
+    except Exception as exc:  # nunca deixe um item quebrado parar a sequência
+        return False, f"Erro ao abrir: {exc}"
 
 
 def _launch_app(target: Target) -> tuple[bool, str]:
@@ -51,27 +71,33 @@ def _launch_app(target: Target) -> tuple[bool, str]:
     exe = Path(path)
     if not exe.exists():
         return False, f"Arquivo não existe: {path}"
+    args = _split_args(target.args)
     workdir = target.workdir.strip() or str(exe.parent)
-    cmd = [str(exe), *_split_args(target.args)]
-    subprocess.Popen(
-        cmd,
-        cwd=workdir,
-        creationflags=_CREATION_FLAGS,
-        close_fds=True,
-    )
+
+    if _ON_MACOS and exe.suffix == ".app":
+        # No macOS um aplicativo é um bundle (uma pasta): não dá para executá-lo
+        # direto — quem sabe abrir é o `open`.
+        cmd = ["open", "-a", str(exe)]
+        if args:
+            cmd.append("--args")
+            cmd.extend(args)
+    else:
+        cmd = [str(exe), *args]
+
+    subprocess.Popen(cmd, cwd=workdir, close_fds=True, **_detached_kwargs())
     return True, "Programa iniciado."
 
 
 def _launch_chrome(target: Target) -> tuple[bool, str]:
     chrome = find_chrome()
     if not chrome:
-        return False, "chrome.exe não encontrado."
+        return False, "Google Chrome não encontrado."
     urls = [u for u in target.urls if u.strip()]
     cmd = [chrome]
     if target.chrome_profile.strip():
         cmd.append(f"--profile-directory={target.chrome_profile.strip()}")
     cmd.extend(urls)
-    subprocess.Popen(cmd, creationflags=_CREATION_FLAGS, close_fds=True)
+    subprocess.Popen(cmd, close_fds=True, **_detached_kwargs())
     tabs = f"{len(urls)} aba(s)" if urls else "sem abas"
     return True, f"Chrome aberto ({tabs})."
 
@@ -80,7 +106,12 @@ def _launch_url(target: Target) -> tuple[bool, str]:
     url = target.url.strip()
     if not url:
         return False, "URL não definida."
-    os.startfile(url)  # noqa: S606 - opens default browser on Windows
+    if _ON_WINDOWS:
+        os.startfile(url)  # noqa: S606 - opens default browser on Windows
+    elif _ON_MACOS:
+        subprocess.Popen(["open", url], close_fds=True, **_detached_kwargs())
+    elif not webbrowser.open(url):
+        return False, "Nenhum navegador padrão encontrado."
     return True, "Link aberto no navegador padrão."
 
 

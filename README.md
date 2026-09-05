@@ -7,7 +7,8 @@ Chrome. Você define o que abrir; o StreamOn dispara a sequência com os delays
 que você configurar.
 
 Visual alinhado ao Streamer Sidekick (paleta neon, painéis de canto cortado,
-tipografia Bahnschrift). Funciona standalone **ou** como plugin do Sidekick.
+tipografia Bahnschrift). Funciona standalone **ou** como plugin do Sidekick,
+no Windows e no macOS.
 
 ## Instalar como plugin do Streamer Sidekick
 
@@ -33,17 +34,19 @@ duplicado, desativado ou removido.
 
 ### Tipos de item
 
-- **Programa (.exe)** — caminho do executável, argumentos opcionais e pasta de
-  trabalho opcional (vazio = pasta do próprio `.exe`, importante para o OBS).
+- **Programa** — caminho do executável (`.exe` no Windows, bundle `.app` no
+  macOS), argumentos opcionais e pasta de trabalho opcional (vazio = pasta do
+  próprio programa, importante para o OBS).
 - **Chrome (perfil + abas)** — escolhe um perfil do Chrome (detectados
   automaticamente pelo nome) e uma lista de URLs, cada uma vira uma aba na mesma
   janela.
-- **Link (navegador padrão)** — abre uma URL no navegador padrão do Windows.
+- **Link (navegador padrão)** — abre uma URL no navegador padrão do sistema.
 
 Cada item tem um **delay (segundos)** aplicado *depois* de abri-lo, dando tempo do
 programa carregar antes do próximo.
 
-A configuração fica em `%APPDATA%\StreamLigar\config.json`.
+A configuração fica em `%APPDATA%\StreamLigar\config.json` (Windows) ou em
+`~/Library/Application Support/StreamLigar/config.json` (macOS).
 
 ## Rodar do código-fonte
 
