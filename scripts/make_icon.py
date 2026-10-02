@@ -1,7 +1,17 @@
-"""Generate app_icon.ico / .png with the Stream Ligar neon power mark.
+"""Gera o icone do StreamOn: pixel-art 12x12 do Sidekick OS, fundo transparente.
 
-Run: python scripts/make_icon.py
+Segue o PLUGIN_STANDARD §5 e o DESIGN.md do Streamer Sidekick (Iconography,
+icon-brand): grade 12x12 de celulas solidas, sem antisserrilhado e sem degrade,
+com uma cor de papel, um acento e a tinta clara. O desenho e o mesmo que o hub
+usa para o StreamOn (``streamer_sidekick.ui.icons.BRAND["power"]``); mudou
+la, mude aqui.
+
+Cada tamanho usa um numero inteiro de pixels por celula, centralizado, para o
+icone ficar nitido em qualquer escala.
+
+    python scripts/make_icon.py
 """
+from __future__ import annotations
 
 import os
 import sys
@@ -9,87 +19,70 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QPointF, QRectF, Qt  # noqa: E402
-from PySide6.QtGui import (  # noqa: E402
-    QBrush,
-    QColor,
-    QGuiApplication,
-    QLinearGradient,
-    QPainter,
-    QPainterPath,
-    QPen,
-    QPixmap,
-)
+from PySide6.QtCore import QRect, Qt  # noqa: E402
+from PySide6.QtGui import QColor, QGuiApplication, QImage, QPainter  # noqa: E402
 
-CYAN = "#37F2FF"
-MAGENTA = "#FF4FD8"
-VOID = "#0A0B12"
-BORDER = "#273140"
+# Tokens do Sidekick OS (DESIGN.md, Colors).
+CORES = {"primary": "#37F2FF", "brand": "#FF4FD8", "success": "#B9FF43", "ink": "#F4F0FF"}
 
-OUT_DIR = Path(__file__).resolve().parents[1] / "src" / "stream_ligar" / "assets" / "brand"
+# '#' cor principal, '+' acento, '*' tinta clara (ink), '.' transparente
+PRINCIPAL, ACENTO = "primary", "brand"
+GRADE = [
+    "............",
+    ".....++.....",
+    "..#..++..#..",
+    ".#...++...#.",
+    "#....++....#",
+    "#....++....#",
+    "#..........#",
+    "#..........#",
+    ".#........#.",
+    "..#......#..",
+    "...######...",
+    "............",
+]
+
+DESTINO = Path(__file__).resolve().parent.parent / "src/stream_ligar/assets/brand/app_icon.png"
 
 
-def render(size: int) -> QPixmap:
-    pm = QPixmap(size, size)
-    pm.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pm)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    # rounded square backdrop
-    margin = size * 0.06
-    rect = QRectF(margin, margin, size - 2 * margin, size - 2 * margin)
-    radius = size * 0.22
-    path = QPainterPath()
-    path.addRoundedRect(rect, radius, radius)
-    p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QColor(VOID))
-    p.drawPath(path)
-    border_pen = QPen(QColor(BORDER), size * 0.02)
-    p.setBrush(Qt.BrushStyle.NoBrush)
-    p.setPen(border_pen)
-    p.drawPath(path)
-
-    # neon power symbol
-    grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
-    grad.setColorAt(0.0, QColor(CYAN))
-    grad.setColorAt(0.6, QColor(CYAN))
-    grad.setColorAt(1.0, QColor(MAGENTA))
-    pen = QPen(QBrush(grad), size * 0.09)
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    p.setPen(pen)
-
-    inset = size * 0.30
-    ring = QRectF(inset, inset * 1.08, size - 2 * inset, size - 2 * inset)
-    p.drawArc(ring, 70 * 16, 320 * 16)
-    cx = rect.center().x()
-    p.drawLine(QPointF(cx, size * 0.24), QPointF(cx, size * 0.5))
+def render(tamanho: int) -> QImage:
+    imagem = QImage(tamanho, tamanho, QImage.Format.Format_ARGB32)
+    imagem.fill(Qt.GlobalColor.transparent)
+    celula = max(1, tamanho // 12)
+    margem = (tamanho - celula * 12) // 2
+    tintas = {"#": QColor(CORES[PRINCIPAL]), "+": QColor(CORES[ACENTO]), "*": QColor(CORES["ink"])}
+    p = QPainter(imagem)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+    for linha, texto in enumerate(GRADE):
+        for coluna, ch in enumerate(texto):
+            if ch in tintas:
+                p.fillRect(QRect(margem + coluna * celula, margem + linha * celula, celula, celula), tintas[ch])
     p.end()
-    return pm
+    return imagem
 
 
 def main() -> int:
     QGuiApplication(sys.argv)
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    sizes = [16, 24, 32, 48, 64, 128, 256]
-    pixmaps = [render(s) for s in sizes]
-    pixmaps[-1].save(str(OUT_DIR / "app_icon.png"), "PNG")
-
-    # Build a multi-resolution .ico
+    assert len(GRADE) == 12 and all(len(linha) == 12 for linha in GRADE), "a grade tem de ser 12x12"
+    DESTINO.parent.mkdir(parents=True, exist_ok=True)
+    imagem = render(256)
+    imagem.save(str(DESTINO), "PNG")
+    print(f"icone salvo em {DESTINO} ({imagem.width()}x{imagem.height()})")
+    # .ico multi-resolucao para o executavel e a janela (o build usa este arquivo).
+    ico = DESTINO.with_suffix(".ico")
+    tamanhos = [16, 24, 32, 48, 64, 128, 256]
     try:
         from PIL import Image  # type: ignore
 
-        png = OUT_DIR / "_tmp_256.png"
-        pixmaps[-1].save(str(png), "PNG")
-        img = Image.open(png)
-        img.save(str(OUT_DIR / "app_icon.ico"), sizes=[(s, s) for s in sizes])
-        png.unlink(missing_ok=True)
+        temporario = DESTINO.with_name("_tmp_256.png")
+        imagem.save(str(temporario), "PNG")
+        Image.open(temporario).save(str(ico), sizes=[(t, t) for t in tamanhos])
+        temporario.unlink(missing_ok=True)
     except Exception:
-        # Fallback: Qt can write a single-size .ico
-        pixmaps[-1].save(str(OUT_DIR / "app_icon.ico"), "ICO")
-    print("icon written to", OUT_DIR)
+        imagem.save(str(ico), "ICO")  # sem Pillow: .ico de um tamanho so
+    print(f"icone salvo em {ico}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

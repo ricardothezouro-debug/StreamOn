@@ -4,5 +4,5 @@ Um app companheiro do Streamer Sidekick: abre todos os programas e links
 necessários para iniciar a transmissão, com delays configuráveis entre eles.
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 APP_NAME = "Stream Ligar"
